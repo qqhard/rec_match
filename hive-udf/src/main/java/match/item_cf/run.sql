@@ -39,7 +39,7 @@ from
                     , row_number() over(partition by user_id order by rand()) as seq
                 from (select * from ml_1m_data_train) t
             ) t
-            where seq <= 1000
+            where seq <= 300
         ) t
         group by user_id
     ) t

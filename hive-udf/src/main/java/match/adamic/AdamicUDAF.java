@@ -1,4 +1,4 @@
-package match.item_cf;
+package match.adamic;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -26,10 +26,10 @@ import java.util.*;
         extended = "Example:\n"
                 + " > SELECT _FUNC_(col) from src;"
 )
-public class ItemCFUDAF extends AbstractGenericUDAFResolver {
-    private static final Log LOG = LogFactory.getLog(ItemCFUDAF.class.getName());
+public class AdamicUDAF extends AbstractGenericUDAFResolver {
+    private static final Log LOG = LogFactory.getLog(AdamicUDAF.class.getName());
 
-    public ItemCFUDAF() {
+    public AdamicUDAF() {
         // TODO Auto-generated constructor stub
     }
 
@@ -227,7 +227,7 @@ public class ItemCFUDAF extends AbstractGenericUDAFResolver {
             for (List<ItemUvNode> list : buffer) {
                 for (ItemUvNode node : list) {
                     statMap.put(node.itemId,
-                            1.0 / Math.sqrt(uv * node.uv) +
+                            1.0 / Math.log(2.0 + list.size()) +
                                     statMap.getOrDefault(node.itemId, 0.0));
                 }
             }

@@ -238,6 +238,7 @@ public class SwingUDAF extends AbstractGenericUDAFResolver {
         }
 
         private List<ItemScoreNode> itemCF(List<Set<ItemUvNode>> buffer, long uv) {
+            int topK = 200;
             Map<String, Double> statMap = new HashMap<String, Double>();
             Set<ItemUvNode> tmpSet = new HashSet<>();
             for (int indexI = 0; indexI < buffer.size(); indexI++) {
@@ -255,9 +256,9 @@ public class SwingUDAF extends AbstractGenericUDAFResolver {
                 }
             }
 
-            PriorityQueue<ItemScoreNode> queue = new PriorityQueue<ItemScoreNode>(5);
+            PriorityQueue<ItemScoreNode> queue = new PriorityQueue<ItemScoreNode>(topK);
             for (Map.Entry<String, Double> entry : statMap.entrySet()) {
-                if (queue.size() < 5) {
+                if (queue.size() < topK) {
                     ItemScoreNode isNode = new ItemScoreNode();
                     isNode.itemId = entry.getKey();
                     isNode.score = entry.getValue();
