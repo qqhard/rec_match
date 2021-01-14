@@ -1,4 +1,4 @@
-package match.item_cf;
+package match.item_cf_iuf;
 
 import match.common.CommonVO;
 import match.common.I2ICommonEvaluator;
@@ -9,7 +9,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
-import org.apache.hadoop.hive.serde2.objectinspector.*;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.Text;
 
@@ -22,10 +22,10 @@ import java.util.*;
         extended = "Example:\n"
                 + " > SELECT _FUNC_(col) from src;"
 )
-public class ItemCFUDAF extends AbstractGenericUDAFResolver {
-    private static final Log LOG = LogFactory.getLog(ItemCFUDAF.class.getName());
+public class ItemCfIufUDAF extends AbstractGenericUDAFResolver {
+    private static final Log LOG = LogFactory.getLog(ItemCfIufUDAF.class.getName());
 
-    public ItemCFUDAF() {
+    public ItemCfIufUDAF() {
         // TODO Auto-generated constructor stub
     }
 
@@ -75,7 +75,7 @@ public class ItemCFUDAF extends AbstractGenericUDAFResolver {
             for (List<CommonVO.ItemUvNode> list : buffer) {
                 for (CommonVO.ItemUvNode node : list) {
                     statMap.put(node.itemId,
-                            1.0 / Math.sqrt(uv * node.uv) +
+                            (1.0 / Math.log(2.0 + list.size())) / Math.sqrt(uv * node.uv) +
                                     statMap.getOrDefault(node.itemId, 0.0));
                 }
             }
@@ -96,10 +96,8 @@ public class ItemCFUDAF extends AbstractGenericUDAFResolver {
                     }
                 }
             }
-            List<CommonVO.ItemScoreNode> result = new ArrayList<>();
-            while (!queue.isEmpty()) {
-                result.add(queue.remove());
-            }
+            List<CommonVO.ItemScoreNode> result = new ArrayList<>(queue);
+            result.sort(null);
             Collections.reverse(result);
             return result;
         }

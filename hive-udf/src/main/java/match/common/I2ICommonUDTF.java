@@ -1,17 +1,17 @@
-package match.i2i;
+package match.common;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDTF;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Description(
         name = "explode_name",
@@ -23,11 +23,18 @@ import java.util.ArrayList;
                 + " > SELECT adTable.name,adTable.surname"
                 + " > FROM src LATERAL VIEW _FUNC_(col) adTable AS name, surname;"
 )
-public class I2IUDTF extends GenericUDTF {
+public class I2ICommonUDTF extends GenericUDTF {
+    private static final Log LOG = LogFactory.getLog(I2ICommonUDTF.class.getName());
 
     @Override
-    public StructObjectInspector initialize(ObjectInspector[] argOIs)
+    public StructObjectInspector initialize(StructObjectInspector sargOIs)
             throws UDFArgumentException {
+        List<? extends StructField> inputFields = sargOIs.getAllStructFieldRefs();
+        ObjectInspector[] argOIs = new ObjectInspector[inputFields.size()];
+        for (int i = 0; i < inputFields.size(); i++) {
+            argOIs[i] = inputFields.get(i).getFieldObjectInspector();
+        }
+
 
         if (argOIs.length != 1) {
             throw new UDFArgumentException("ExplodeStringUDTF takes exactly one argument.");
@@ -42,7 +49,10 @@ public class I2IUDTF extends GenericUDTF {
         fieldNames.add("item_id");
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
         fieldNames.add("item_neighbors");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+//        fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector)
+        );
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
@@ -54,15 +64,15 @@ public class I2IUDTF extends GenericUDTF {
             String[] items = args[0].toString().split(",");
             if (items.length > 1) {
                 for (int index = 0; index < items.length; index++) {
-                    StringBuilder stringBuilder = new StringBuilder();
+                    List<String> array = new ArrayList<String>();
                     for (int j = 0; j < items.length; j++) {
                         if (index != j) {
-                            stringBuilder.append(",").append(items[j]);
+                            array.add(items[j]);
                         }
                     }
                     Object[] out = new Object[2];
                     out[0] = items[index];
-                    out[1] = stringBuilder.substring(1).toString();
+                    out[1] = array;
                     forward(out);
                 }
             }

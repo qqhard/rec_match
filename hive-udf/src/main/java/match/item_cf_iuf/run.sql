@@ -1,15 +1,16 @@
 
 CREATE TEMPORARY FUNCTION i2i_common_udtf as "match.common.I2ICommonUDTF" using jar "/opt/hive-0.0.2-SNAPSHOT.jar";
-CREATE TEMPORARY FUNCTION swing_udaf as "match.swing.SwingUDAF" using jar "/opt/hive-0.0.2-SNAPSHOT.jar";
+CREATE TEMPORARY FUNCTION item_cf_iuf_udaf as "match.item_cf_iuf.ItemCfIufUDAF" using jar "/opt/hive-0.0.2-SNAPSHOT.jar";
 
-create table if not exists swing_i2i (
+
+create table if not exists item_cf_iuf_i2i (
     item_id string,
     sim_items string
 )
 ;
 
-insert overwrite table swing_i2i
-select split(item,':')[0] as item_id, swing_udaf(item_neighbors, cast(split(item,':')[1] as bigint))
+insert overwrite table item_cf_iuf_i2i
+select split(item,':')[0] as item_id, item_cf_iuf_udaf(item_neighbors, cast(split(item,':')[1] as bigint))
 from
 (
     select i2i_common_udtf(items) as (item, item_neighbors)
@@ -34,9 +35,7 @@ from
 group by item
 ;
 
-
-
-create table if not exists swing_topk_rec (
+create table if not exists item_cf_iuf_topk_rec (
     user_id string,
     item_id string,
     score double,
@@ -44,7 +43,7 @@ create table if not exists swing_topk_rec (
 )
 ;
 
-insert overwrite table swing_topk_rec
+insert overwrite table item_cf_iuf_topk_rec
 select user_id, sim_item_id, score, seq
 from(
     select a.user_id, sim_item_id, score
@@ -54,7 +53,7 @@ from(
         from ml_1m_data_train a
         join (
             select item_id, split(sim_item,':')[0] as sim_item_id, cast(split(sim_item,':')[1] as double) as score
-            from swing_i2i
+            from item_cf_iuf_i2i
             lateral view explode(split(sim_items,',')) sim_table as sim_item
         ) b
         on a.item_id = b.item_id
@@ -68,15 +67,15 @@ from(
 where seq <= 200
 ;
 
---hr@20 = 0.07369717988500502
---hr@100 = 0.2525668522405768
+--hr@20 = 0.07868257734781418
+--hr@100 = 0.2682931003011773
 
 select count(b.user_id) / count(1) as hr
 from ml_1m_data_test a
 left outer join (
     select *
-    from swing_topk_rec
-    where seq <= 100
+    from item_cf_iuf_topk_rec
+    where seq <= 20
 ) b
 on a.user_id = b.user_id
     and a.item_id = b.item_id
